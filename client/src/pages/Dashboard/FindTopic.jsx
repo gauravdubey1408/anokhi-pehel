@@ -84,7 +84,7 @@ const FindTopic = () => {
     setCurrentPage(1);
 
     if (updatedSessions.length === 0) {
-      setFilteredTopic(topics);
+      setFilteredTopic([]);
       return;
     }
 
@@ -106,6 +106,17 @@ const FindTopic = () => {
     setFilteredTopic(sessionFilteredTopic);
   };
 
+  const handleSelectAllSessions = (e) => {
+    if (e.target.checked) {
+      setSession([...sessions]);
+      setFilteredTopic(topics);
+    } else {
+      setSession([]);
+      setFilteredTopic([]);
+    }
+
+    setCurrentPage(1);
+  };
   const fetchTopicCovered = async (classId, subject) => {
     try {
       const response = await axios.get(`${BASE_URL}/topics`, {
@@ -154,7 +165,7 @@ const FindTopic = () => {
       } else {
         setTopics([]);
         setFilteredTopic([]);
-       setSession([currentSession]);
+        setSession([currentSession]);
       }
     } catch (error) {
       console.error("Error fetching topics:", error);
@@ -301,6 +312,22 @@ const FindTopic = () => {
                     {isSessionDropdownOpen && (
                       <div className="absolute z-10 mt-1 w-full sm:max-w-xs bg-white rounded-md shadow-lg ring-1 ring-gray-300">
                         <ul className="space-y-2 text-sm max-h-48 p-3 overflow-y-auto">
+                          <li className="flex items-center">
+                            <input
+                              id="select-all-sessions"
+                              type="checkbox"
+                              checked={session.length === sessions.length}
+                              onChange={handleSelectAllSessions}
+                              className="w-4 h-4 bg-gray-100 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500 focus:ring-2"
+                            />
+
+                            <label
+                              htmlFor="select-all-sessions"
+                              className="ml-2 text-sm font-medium text-gray-900 cursor-pointer"
+                            >
+                              Select All
+                            </label>
+                          </li>
                           {sessions.map((item) => (
                             <li key={item} className="flex items-center">
                               <input
