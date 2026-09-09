@@ -11,14 +11,16 @@ const AddAntyodayaParticipant = () => {
   const dispatch = useDispatch();
   const [credentials, setCredentials] = useState({
     name: "",
+    guardianName: "",
+    dob: "",
     class: "",
     phone: "",
     school: "",
-    // aadhar: "",
     address: "",
     photo: "",
     poc: "",
     events: [],
+    teamName: "",
   });
   const [pocList, setPocList] = useState([]);
   const [eventList, setEventList] = useState([]);
@@ -93,6 +95,8 @@ const AddAntyodayaParticipant = () => {
     dispatch(showLoading());
     const formData = new FormData();
     formData.append("name", credentials.name);
+    formData.append("guardianName", credentials.guardianName);
+    formData.append("dob", credentials.dob);
     formData.append("class", credentials.class);
     formData.append("phone", credentials.phone);
     formData.append("school", credentials.school);
@@ -100,6 +104,7 @@ const AddAntyodayaParticipant = () => {
     formData.append("photo", credentials.photo);
     formData.append("poc", credentials.poc);
     formData.append("events", credentials.events.join(","));
+    formData.append("teamName", credentials.teamName);
 
     try {
       const res = await axios.post(`${BASE_URL}/addParticipants`, formData);
@@ -107,6 +112,8 @@ const AddAntyodayaParticipant = () => {
         alert("Participant submitted successfully!");
         setCredentials({
           name: "",
+          guardianName: "",
+          dob: "",
           class: "",
           phone: "",
           school: "",
@@ -114,6 +121,7 @@ const AddAntyodayaParticipant = () => {
           photo: "",
           poc: "",
           events: [],
+          teamName: "",
         });
       } else {
         alert(res.data);
@@ -155,36 +163,53 @@ const AddAntyodayaParticipant = () => {
   const handleEventChange = (selectedEvent, group) => {
     setCredentials((prevCredentials) => {
       const selectedEventId = selectedEvent._id;
-      const isAlreadySelected = prevCredentials.events.includes(selectedEventId);
-  
-      // Check if the event is already selected, remove it if so
+
+      const isAlreadySelected =
+        prevCredentials.events.includes(selectedEventId);
+
+      // Unselect event
       if (isAlreadySelected) {
         return {
           ...prevCredentials,
-          events: prevCredentials.events.filter((eventId) => eventId !== selectedEventId),
+          events: prevCredentials.events.filter(
+            (eventId) => eventId !== selectedEventId
+          ),
+          teamName:
+            selectedEvent.eventName === "Dance"
+              ? ""
+              : prevCredentials.teamName,
         };
       }
-  
-      // Check if the max number of events (3) is reached
-      if (prevCredentials.events.length >= 3) {
-        alert("You can only select up to 3 events.");
+
+      // Maximum 2 events
+      if (prevCredentials.events.length >= 2) {
+        alert("You can select a maximum of 2 events.");
         return prevCredentials;
       }
-  
-      // Ensure only one event per group is selected
-      const filteredEvents = prevCredentials.events.filter((eventId) => {
+
+      // Check whether an event from this group is already selected
+      const eventFromSameGroup = prevCredentials.events.some((eventId) => {
         const event = eventList.find((e) => e._id === eventId);
-        return event.eventGroup !== group;
+        return event?.eventGroup === group;
       });
-  
-      // Add the newly selected event
+
+      if (eventFromSameGroup) {
+        alert("You can select only one event from each group.");
+        return prevCredentials;
+      }
+
       return {
         ...prevCredentials,
-        events: [...filteredEvents, selectedEventId],
+        events: [...prevCredentials.events, selectedEventId],
       };
     });
   };
-  
+  const isDanceSelected = credentials.events.some((eventId) => {
+    const event = eventList.find((event) => event._id === eventId);
+
+    return event?.eventName?.toLowerCase() === "dance";
+  });
+
   return (
     <DashboardLayout>
       <div className="m-2 md:m-10 mt-24 p-2 md:p-10 bg-white rounded-3xl">
@@ -219,14 +244,52 @@ const AddAntyodayaParticipant = () => {
                 </div>
                 <div className="sm:col-span-3">
                   <label
-                    htmlFor="phone"
+                    htmlFor="guardianName"
                     className="block text-sm font-medium leading-6 text-gray-900"
                   >
-                    Phone
+                    Guardian's Name
                   </label>
+
                   <div className="mt-2">
                     <input
                       type="text"
+                      name="guardianName"
+                      id="guardianName"
+                      value={credentials.guardianName}
+                      onChange={onChange}
+                      className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                    />
+                  </div>
+                </div>
+                <div className="sm:col-span-3">
+                  <label
+                    htmlFor="dob"
+                    className="block text-sm font-medium leading-6 text-gray-900"
+                  >
+                    Date of Birth
+                  </label>
+
+                  <div className="mt-2">
+                    <input
+                      type="date"
+                      name="dob"
+                      id="dob"
+                      value={credentials.dob}
+                      onChange={onChange}
+                      className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                    />
+                  </div>
+                </div>
+                <div className="sm:col-span-3">
+                  <label
+                    htmlFor="phone"
+                    className="block text-sm font-medium leading-6 text-gray-900"
+                  >
+                    Contact
+                  </label>
+                  <div className="mt-2">
+                    <input
+                      type="tel"
                       name="phone"
                       id="phone"
                       value={credentials.phone}
@@ -306,7 +369,7 @@ const AddAntyodayaParticipant = () => {
                   </div>
                 </div>
 
-              
+
 
                 <div className="col-span-full">
                   <label
@@ -365,14 +428,14 @@ const AddAntyodayaParticipant = () => {
                   )}
                 </div>
 
-                
+
 
                 <div className="sm:col-span-4">
                   <label
                     htmlFor="events"
                     className="block text-sm font-medium leading-6 text-gray-900"
                   >
-                    Select up to 3 events, but only one event per group.
+                    Select up to 2 events, but only one event per group.
                   </label>
 
                   <div className="mt-2 flex flex-col gap-2">
@@ -387,7 +450,12 @@ const AddAntyodayaParticipant = () => {
                       }, {})
                     ).map(([group, events]) => (
                       <div key={group} className="mb-4">
-                        <h3 className="text-lg font-bold text-gray-900">Event-{group}</h3>
+                        <h3 className="text-base font-bold text-gray-900">
+                          Group {group}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          Select one event from this group
+                        </p>
                         <div className="flex flex-col gap-2 mt-2">
                           {events
                             .sort((a, b) => a.eventName.localeCompare(b.eventName))
@@ -411,6 +479,32 @@ const AddAntyodayaParticipant = () => {
                   </div>
 
                 </div>
+                {isDanceSelected && (
+                  <div className="sm:col-span-4">
+                    <label
+                      htmlFor="teamName"
+                      className="block text-sm font-medium leading-6 text-gray-900"
+                    >
+                      Team Name
+                    </label>
+
+                    <div className="mt-2">
+                      <input
+                        type="text"
+                        name="teamName"
+                        id="teamName"
+                        value={credentials.teamName}
+                        onChange={onChange}
+                        placeholder="Enter dance team name"
+                        className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                      />
+                    </div>
+
+                    <p className="mt-2 text-xs text-gray-500">
+                      Required only for participants participating in Dance.
+                    </p>
+                  </div>
+                )}
 
                 {/* Existing fields continue here... */}
               </div>
