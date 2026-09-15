@@ -6,6 +6,7 @@ import Button from "./Button";
 const Navbar = () => {
   const [active, setActive] = useState("Home");
   const [toggle, setToggle] = useState(false);
+  const token = localStorage.getItem("token");
 
   return (
     <nav className="w-full flex py-4 -mb-2 -mt-2 justify-between items-center navbar">
@@ -20,16 +21,34 @@ const Navbar = () => {
         {navLinks.map((nav, index) => (
           <li
             key={nav.id}
-            className={`font-poppins font-medium cursor-pointer text-[16px] ${
-              active === nav.title ? "text-black font-bold" : "text-slate-900"
-            } ${index === navLinks.length - 1 ? "mr-0" : "mr-10"}`}
+            className={`font-poppins font-medium cursor-pointer text-[16px] ${active === nav.title ? "text-black font-bold" : "text-slate-900"
+              } ${index === navLinks.length - 1 ? "mr-0" : "mr-10"}`}
             onClick={() => setActive(nav.title)}
           >
             <Link to={`/${nav.id}`}>{nav.title}</Link>
           </li>
         ))}
+        {token &&
+          <li
+            key="dashboard"
+            className={`font-poppins font-medium cursor-pointer text-[16px] ${active === "dashboard" ? "text-black font-bold" : "text-slate-900"
+              } ${5 === navLinks.length - 1 ? "mr-0" : "mr-10"} ml-10`}
+            onClick={() => setActive("dashboard")}
+          >
+            <Link to={`/dashboard`}> Dashboard</Link>
+          </li>
+        }
       </ul>
-      <div className="sm:hidden flex flex-1 justify-end items-center">
+      <div className="sm:hidden flex flex-1 justify-end items-center gap-3">
+        {token && (
+          <Link
+            to="/dashboard"
+            onClick={() => setActive("dashboard")}
+            className="font-poppins font-medium text-[14px] text-slate-900"
+          >
+           Dashboard
+          </Link>
+        )}
         <img
           src={toggle ? close : menu}
           alt="menu"
@@ -38,19 +57,17 @@ const Navbar = () => {
         />
 
         <div
-          className={`${
-            !toggle ? "hidden" : "flex"
-          } p-6 bg-gray-100 absolute top-20 right-0 mx-4 my-2 min-w-[140px] rounded-xl sidebar`}
+          className={`${!toggle ? "hidden" : "flex"
+            } p-6 bg-gray-100 absolute top-20 right-0 mx-4 my-2 min-w-[140px] rounded-xl sidebar`}
         >
           <ul className="list-none flex justify-end items-start flex-1 flex-col">
             {navLinks.map((nav, index) => (
               <li
                 key={nav.id}
-                className={`font-poppins font-medium cursor-pointer text-[16px] ${
-                  active === nav.title
+                className={`font-poppins font-medium cursor-pointer text-[16px] ${active === nav.title
                     ? "text-black font-bold"
                     : "text-gray-600"
-                } ${index === navLinks.length - 1 ? "mb-0" : "mb-4"}`}
+                  } ${index === navLinks.length - 1 ? "mb-0" : "mb-4"}`}
                 onClick={() => setActive(nav.title)}
               >
                 <Link to={`/${nav.id}`}>{nav.title}</Link>

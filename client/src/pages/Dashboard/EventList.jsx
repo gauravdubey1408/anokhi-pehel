@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import DashboardLayout from "../../components/Dashboard/DashboardLayout";
 import { BASE_URL } from "../../../src/Service/helper";
+import { downloadCSV, downloadPDF } from "../../../src/Service/utilityfunctions";
 import Header from "../../components/Dashboard/Header";
 import Button from "../../components/Dashboard/Button";
 import { useNavigate, Link } from "react-router-dom";
@@ -11,8 +12,6 @@ import {
   MdDownload,
 } from "react-icons/md";
 import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
 import Spinner from "../../components/Spinner";
 
 const EventPage = () => {
@@ -124,26 +123,49 @@ const EventPage = () => {
   };
 
   const handleDownloadTable = () => {
-    const doc = new jsPDF();
+    const columns = [
+      { label: "S.No.", key: "index" },
+      { label: "Group", key: "eventGroup" },
+      { label: "Name", key: "eventName" },
+      { label: "Venue", key: "location" },
+      { label: "Start Time", key: "startTime" },
+      { label: "End Time", key: "endTime" },
+      { label: "Coordinator", key: "coordinator" },
+      { label: "Phone", key: "phone" },
+      { label: "Year", key: "year" }
+    ];
 
-    doc.autoTable({
-      head: [["S.No.","Group", "Name", "Venue", "Start Time", "End Time", "Coordinator", "Phone", "Year"]],
-      body: sortedEventsList.map((event,index) => [
-        index+1,
-        event.eventGroup,
-        event.eventName,
-        event.venue,
-        event.startTime,
-        event.endTime,
-        event.coordinator,
-        event.phone,
-        event.year
-      ]),
-    });
+    const dataWithIndex = sortedEventsList.map((event, index) => ({
+      ...event,
+      index: index + 1
+    }));
 
-    doc.save("Events_list.pdf");
+    downloadPDF(dataWithIndex, columns, "Events_list");
   };
 
+  //download CSV file
+  const handleDownloadTableCsv = () => {
+    const columns = [
+      { label: "S.No.", key: "index" },
+      { label: "Group", key: "eventGroup" },
+      { label: "Name", key: "eventName" },
+      { label: "Venue", key: "location" },
+      { label: "Start Time", key: "startTime" },
+      { label: "End Time", key: "endTime" },
+      { label: "Coordinator", key: "coordinator" },
+      { label: "Phone", key: "phone" },
+      { label: "Year", key: "year" }
+    ];
+
+    const dataWithIndex = sortedEventsList.map((event, index) => ({
+      ...event,
+      index: index + 1
+    }));
+
+    downloadCSV(dataWithIndex, columns, "Events_list");
+  };
+
+       
   return (
     <DashboardLayout>
       {loading && <Spinner />}
@@ -255,13 +277,28 @@ const EventPage = () => {
                     {isActionsDropdownOpen && (
                         <div className="absolute right-0 mt-2 z-20 w-40 bg-white rounded-lg shadow-xl border border-gray-100">
                             <ul className="py-1 text-sm text-gray-700">
-                                <li onClick={handleDownloadTable}>
+                                <li onClick={(e) => {
+                                    e.preventDefault();
+                                    handleDownloadTable();
+                                }}>
                                     <a
                                         href="#"
                                         className="flex py-2 px-4 text-green-600 hover:bg-green-50 hover:text-green-700 transition duration-150"
                                     >
                                         <MdDownload className="mt-0.5 mr-1" />
                                         <span>Download Pdf</span>
+                                    </a>
+                                </li>
+                                <li onClick={(e) => {
+                                    e.preventDefault();
+                                    handleDownloadTableCsv();
+                                }}>
+                                    <a
+                                        href="#"
+                                        className="flex py-2 px-4 text-green-600 hover:bg-green-50 hover:text-green-700 transition duration-150"
+                                    >
+                                        <MdDownload className="mt-0.5 mr-1" />
+                                        <span>Download Csv</span>
                                     </a>
                                 </li>
                             </ul>

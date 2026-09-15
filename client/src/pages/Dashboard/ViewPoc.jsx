@@ -3,14 +3,13 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Header from "../../components/Dashboard/Header";
 import { BASE_URL } from "../../../src/Service/helper";
+import { downloadCSV, downloadPDF } from "../../../src/Service/utilityfunctions";
 import { useSelector } from "react-redux";
 import {
   MdLocationPin,
   MdDownload,
 } from "react-icons/md";
 import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
 
 const ViewPocList = () => {
   const [pocList, setPocList] = useState([]);
@@ -100,20 +99,38 @@ const ViewPocList = () => {
   };
 
   const handleDownloadTable = () => {
-    const doc = new jsPDF();
+    const columns = [
+      { label: "S.No.", key: "index" },
+      { label: "Name", key: "nameOfPoc" },
+      { label: "Contact No.", key: "contact" },
+      { label: "School", key: "school" },
+      { label: "Year", key: "year" }
+    ];
 
-    doc.autoTable({
-      head: [["S.No.","Name", "Contact No.", "School", "Year"]],
-      body: sortedPocList.map((poc,index) => [
-        index+1,
-        poc.nameOfPoc,
-        poc.contact,
-        poc.school,
-        poc.year,
-      ]),
-    });
+    const dataWithIndex = sortedPocList.map((poc, index) => ({
+      ...poc,
+      index: index + 1
+    }));
 
-    doc.save("poc_list.pdf");
+    downloadPDF(dataWithIndex, columns, "poc_list");
+  };
+
+  // Download CSV file
+  const handleDownloadTableCsv = () => {
+    const columns = [
+      { label: "S.No.", key: "index" },
+      { label: "Name", key: "nameOfPoc" },
+      { label: "Contact No.", key: "contact" },
+      { label: "School", key: "school" },
+      { label: "Year", key: "year" }
+    ];
+
+    const dataWithIndex = sortedPocList.map((poc, index) => ({
+      ...poc,
+      index: index + 1
+    }));
+
+    downloadCSV(dataWithIndex, columns, "poc_list");
   };
 
   return (
@@ -203,13 +220,28 @@ const ViewPocList = () => {
               {isActionsDropdownOpen && (
                 <div className="absolute right-0 mt-2 z-20 w-40 bg-white rounded-lg shadow-lg border border-gray-100">
                   <ul className="py-1 text-sm text-gray-700">
-                    <li onClick={handleDownloadTable}>
+                    <li onClick={(e) => {
+                      e.preventDefault();
+                      handleDownloadTable();
+                    }}>
                       <a
                         href="#"
                         className="flex py-2 px-4 text-green-600 hover:bg-green-50 hover:text-green-700 transition duration-150"
                       >
                         <MdDownload className="mt-0.5 mr-1" />
                         <span>Download Pdf</span>
+                      </a>
+                    </li>
+                    <li onClick={(e) => {
+                      e.preventDefault();
+                      handleDownloadTableCsv();
+                    }}>
+                      <a
+                        href="#"
+                        className="flex py-2 px-4 text-green-600 hover:bg-green-50 hover:text-green-700 transition duration-150"
+                      >
+                        <MdDownload className="mt-0.5 mr-1" />
+                        <span>Download Csv</span>
                       </a>
                     </li>
                   </ul>
