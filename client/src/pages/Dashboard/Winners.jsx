@@ -97,7 +97,7 @@ const EventPage = () => {
 
   return (
     <DashboardLayout>
-      <Header category="Antyodaya" title="Event Winners" />
+      <Header category="Antyodaya2k24" title="Event Winners" />
   <div className="m-2 p-2 bg-white rounded-3xl">
     <div className="flex justify-between items-center mb-4">
       <h2 className="text-xl font-bold"></h2>

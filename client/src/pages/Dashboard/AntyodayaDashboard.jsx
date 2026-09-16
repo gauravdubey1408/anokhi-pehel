@@ -30,6 +30,14 @@ const extractYear = (val) => {
   return !isNaN(num) && num >= 1990 && num <= 2100 ? num : null;
 };
 
+const getDistinctYears = (eventsList = [], pocList = []) => {
+  const eventYears = eventsList.map((e) => extractYear(e.year || e.festName));
+  const pocYears = pocList.map((p) => extractYear(p.year));
+  const combinedYears = [...eventYears, ...pocYears].filter(Boolean);
+
+  return [...new Set(combinedYears)].sort((a, b) => b - a);
+};
+
 const AntyodayaDashboard = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.user);
@@ -72,14 +80,7 @@ const AntyodayaDashboard = () => {
       setWinners(fetchedWinners);
 
       // Determine years with data (strictly based on Events and POCs)
-      const yearsWithData = Array.from(
-        new Set(
-          [
-            ...fetchedEvents.map((e) => extractYear(e.year || e.festName)),
-            ...fetchedPoc.map((pc) => extractYear(pc.year)),
-          ].filter(Boolean)
-        )
-      ).sort((a, b) => b - a);
+      const yearsWithData = getDistinctYears(fetchedEvents, fetchedPoc);
 
       if (yearsWithData.length > 0) {
         setSelectedYear(yearsWithData[0]);
@@ -129,28 +130,21 @@ const AntyodayaDashboard = () => {
     return count;
   };
 
-  const allYears = Array.from(
-    new Set(
-      [
-        ...events.map((e) => extractYear(e.year || e.festName)),
-        ...poc.map((pc) => extractYear(pc.year)),
-      ].filter(Boolean)
-    )
-  ).sort((a, b) => b - a);
+  const allYears = getDistinctYears(events, poc);
 
   const filteredParticipants =
     selectedYear === "all"
       ? participants
       : participants.filter(
-          (p) => extractYear(p.year) === Number(selectedYear)
-        );
+        (p) => extractYear(p.year) === Number(selectedYear)
+      );
 
   const filteredEvents =
     selectedYear === "all"
       ? events
       : events.filter(
-          (e) => extractYear(e.year || e.festName) === Number(selectedYear)
-        );
+        (e) => extractYear(e.year || e.festName) === Number(selectedYear)
+      );
 
   const filteredPoc =
     selectedYear === "all"
@@ -161,8 +155,8 @@ const AntyodayaDashboard = () => {
     selectedYear === "all"
       ? winners
       : winners.filter(
-          (w) => extractYear(w.year || w.festName) === Number(selectedYear)
-        );
+        (w) => extractYear(w.year || w.festName) === Number(selectedYear)
+      );
 
   const totalWinnersCount = countWinners(filteredWinnerEvents);
 
