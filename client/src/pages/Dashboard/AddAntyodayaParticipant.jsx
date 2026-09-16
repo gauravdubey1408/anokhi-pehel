@@ -4,11 +4,10 @@ import axios from "axios";
 import { classes, locations, modes } from "../../constants/Dashboard";
 import { BASE_URL } from "../../../src/Service/helper";
 import "react-datepicker/dist/react-datepicker.css";
-import { showLoading, hideLoading } from "../../redux/features/alertSlice";
-import { useDispatch } from "react-redux";
+import ErrorMessageModel from "../../components/Models/ErrorMessageModel";
+import SuccessMessage from "../../components/Models/SuccessMessageModel";
 
 const AddAntyodayaParticipant = () => {
-  const dispatch = useDispatch();
   const [credentials, setCredentials] = useState({
     name: "",
     class: "",
@@ -24,6 +23,10 @@ const AddAntyodayaParticipant = () => {
   const [eventList, setEventList] = useState([]);
   const [participantList, setParticipantList] = useState([]);
   const [imageSize, setImageSize] = useState("");
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
   const WIDTH = 800;
 
   useEffect(() => {
@@ -46,13 +49,11 @@ const AddAntyodayaParticipant = () => {
         console.log("Events (current year only):", currentYearEvents);
       } catch (error) {
         console.error("Error fetching data:", error);
-      } finally {
-        dispatch(hideLoading());
       }
     };
 
     fetchPocAndEventData();
-  }, [dispatch]);
+  }, []);
 
   // Resizing and setting photo
   const resizeImage = (file) => {
@@ -122,12 +123,13 @@ const AddAntyodayaParticipant = () => {
       if (selectedEvent && isDanceEvent(selectedEvent)) {
         const count = getDanceParticipantsCount(selectedEvent);
         if (count >= 3) {
-          alert(`Cannot add participant. Maximum limit (3) for "${selectedEvent.eventName}" has already been reached for this POC/school.`);
+          setErrorMessage(`Cannot add participant. Maximum limit (3) for "${selectedEvent.eventName}" has already been reached for this POC/school.`);
+          setShowError(true);
           return;
         }
       }
     }
-    dispatch(showLoading());
+    setLoading(true);
     const formData = new FormData();
     formData.append("name", credentials.name);
     formData.append("class", credentials.class);
@@ -141,7 +143,7 @@ const AddAntyodayaParticipant = () => {
     try {
       const res = await axios.post(`${BASE_URL}/addParticipants`, formData);
       if (res.data === "Participant Added") {
-        alert("Participant submitted successfully!");
+        setShowSuccess(true);
         setCredentials({
           name: "",
           class: "",
@@ -159,13 +161,15 @@ const AddAntyodayaParticipant = () => {
           console.error("Error refreshing participant list:", fetchErr);
         }
       } else {
-        alert(res.data);
+        setErrorMessage(res.data);
+        setShowError(true);
       }
     } catch (err) {
-      alert("ALL INPUT IS NOT FILLED");
+      setErrorMessage("ALL INPUT IS NOT FILLED");
+      setShowError(true);
       console.error("error", err);
     } finally {
-      dispatch(hideLoading());
+      setLoading(false);
     }
   };
 
@@ -199,7 +203,7 @@ const AddAntyodayaParticipant = () => {
     setCredentials((prevCredentials) => {
       const selectedEventId = selectedEvent._id;
       const isAlreadySelected = prevCredentials.events.includes(selectedEventId);
-  
+
       // Check if the event is already selected, remove it if so
       if (isAlreadySelected) {
         return {
@@ -210,7 +214,8 @@ const AddAntyodayaParticipant = () => {
 
       // Check if selecting a dance event without selecting POC / School first
       if (isDanceEvent(selectedEvent) && !prevCredentials.poc && !prevCredentials.school) {
-        alert("Please select a Point of Contact (POC) / School first to verify Dance event availability.");
+        setErrorMessage("Please select a Point of Contact (POC) / School first to verify Dance event availability.");
+        setShowError(true);
         return prevCredentials;
       }
 
@@ -218,23 +223,25 @@ const AddAntyodayaParticipant = () => {
       if (isDanceEvent(selectedEvent)) {
         const danceCount = getDanceParticipantsCount(selectedEvent);
         if (danceCount >= 3) {
-          alert(`Maximum 3 participants from this School / POC are allowed for "${selectedEvent.eventName}". Limit reached (${danceCount}/3).`);
+          setErrorMessage(`Maximum 3 participants from this School / POC are allowed for "${selectedEvent.eventName}". Limit reached (${danceCount}/3).`);
+          setShowError(true);
           return prevCredentials;
         }
       }
-  
+
       // Check if the max number of events (3) is reached
       if (prevCredentials.events.length >= 3) {
-        alert("You can only select up to 3 events.");
+        setErrorMessage("You can only select up to 3 events.");
+        setShowError(true);
         return prevCredentials;
       }
-  
+
       // Ensure only one event per group is selected
       const filteredEvents = prevCredentials.events.filter((eventId) => {
         const event = eventList.find((e) => e._id === eventId);
         return event.eventGroup !== group;
       });
-  
+
       // Add the newly selected event
       return {
         ...prevCredentials,
@@ -242,7 +249,7 @@ const AddAntyodayaParticipant = () => {
       };
     });
   };
-  
+
   return (
     <DashboardLayout>
       <div className="m-2 md:m-10 mt-24 p-2 md:p-10 bg-white rounded-3xl">
@@ -364,7 +371,7 @@ const AddAntyodayaParticipant = () => {
                   </div>
                 </div>
 
-              
+
 
                 <div className="col-span-full">
                   <label
@@ -423,7 +430,7 @@ const AddAntyodayaParticipant = () => {
                   )}
                 </div>
 
-                
+
 
                 <div className="sm:col-span-4">
                   <label
@@ -472,13 +479,12 @@ const AddAntyodayaParticipant = () => {
                                   </div>
                                   {isDance && (credentials.poc || credentials.school) && (
                                     <span
-                                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                        isQuotaFull
-                                          ? "bg-red-100 text-red-700"
-                                          : danceCount === 2
+                                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${isQuotaFull
+                                        ? "bg-red-100 text-red-700"
+                                        : danceCount === 2
                                           ? "bg-amber-100 text-amber-700"
                                           : "bg-emerald-100 text-emerald-700"
-                                      }`}
+                                        }`}
                                     >
                                       {isQuotaFull
                                         ? "School quota full (3/3)"
@@ -510,12 +516,26 @@ const AddAntyodayaParticipant = () => {
             </button>
             <button
               type="submit"
-              className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              disabled={loading}
+              className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
             >
-              Save
+              {loading ? "Saving..." : "Save"}
             </button>
           </div>
         </form>
+        <ErrorMessageModel
+          isOpen={showError}
+          onClose={() => setShowError(false)}
+          onRetry={() => setShowError(false)}
+          title="Error"
+          message={errorMessage}
+        />
+        {showSuccess && (
+          <SuccessMessage
+            message="Participant submitted successfully!"
+            onClose={() => setShowSuccess(false)}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
