@@ -1,6 +1,6 @@
 import DashboardLayout from "../../components/Dashboard/DashboardLayout";
 import { useNavigate } from "react-router-dom";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { BASE_URL } from "../../Service/helper.js";
 import axios from "axios";
@@ -31,11 +31,14 @@ const extractYear = (val) => {
 };
 
 const getDistinctYears = (eventsList = [], pocList = []) => {
-  const eventYears = eventsList.map((e) => extractYear(e.year || e.festName));
-  const pocYears = pocList.map((p) => extractYear(p.year));
-  const combinedYears = [...eventYears, ...pocYears].filter(Boolean);
-
-  return [...new Set(combinedYears)].sort((a, b) => b - a);
+  return Array.from(
+    new Set(
+      [
+        ...eventsList.map((e) => extractYear(e.year || e.festName)),
+        ...pocList.map((pc) => extractYear(pc.year)),
+      ].filter(Boolean)
+    )
+  ).sort((a, b) => b - a);
 };
 
 const AntyodayaDashboard = () => {
@@ -53,6 +56,18 @@ const AntyodayaDashboard = () => {
   const [error, setError] = useState(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
 
+  const allYears = useMemo(() => getDistinctYears(events, poc), [events, poc]);
+
+  useEffect(() => {
+    if (allYears.length > 0) {
+      setSelectedYear((prev) =>
+        prev === "all" || !allYears.includes(Number(prev)) ? allYears[0] : prev
+      );
+    } else if (!loading) {
+      setSelectedYear("all");
+    }
+  }, [allYears, loading]);
+
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
@@ -69,24 +84,10 @@ const AntyodayaDashboard = () => {
         axios.get(`${BASE_URL}/getEventsWithWinners`),
       ]);
 
-      const fetchedEvents = eventsResponse.data || [];
-      const fetchedPoc = pocResponse.data || [];
-      const fetchedParticipants = participantsResponse.data || [];
-      const fetchedWinners = winnersResponse.data || [];
-
-      setEvents(fetchedEvents);
-      setPoc(fetchedPoc);
-      setParticipants(fetchedParticipants);
-      setWinners(fetchedWinners);
-
-      // Determine years with data (strictly based on Events and POCs)
-      const yearsWithData = getDistinctYears(fetchedEvents, fetchedPoc);
-
-      if (yearsWithData.length > 0) {
-        setSelectedYear(yearsWithData[0]);
-      } else {
-        setSelectedYear("all");
-      }
+      setEvents(eventsResponse.data || []);
+      setPoc(pocResponse.data || []);
+      setParticipants(participantsResponse.data || []);
+      setWinners(winnersResponse.data || []);
     } catch (err) {
       console.error("Dashboard error:", err);
       setError("Failed to fetch Antyodaya dashboard data. Please try again.");
@@ -102,61 +103,47 @@ const AntyodayaDashboard = () => {
 
   const countWinners = (eventsList) => {
     let count = 0;
-    const winnerKeys = [
-      "h6to8firstPlace",
-      "h6to8secondPlace",
-      "h6to8thirdPlace",
-      "h6to8fourthPlace",
-      "h9to12firstPlace",
-      "h9to12secondPlace",
-      "h9to12thirdPlace",
-      "h9to12fourthPlace",
-      "e6to8firstPlace",
-      "e6to8secondPlace",
-      "e6to8thirdPlace",
-      "e6to8fourthPlace",
-      "e9to12firstPlace",
-      "e9to12secondPlace",
-      "e9to12thirdPlace",
-      "e9to12fourthPlace",
-    ];
-    eventsList.forEach((ev) => {
-      winnerKeys.forEach((k) => {
-        if (ev[k] && ev[k].trim() !== "" && ev[k].toLowerCase() !== "n/a") {
-          count++;
-        }
-      });
-    });
+    // for now keep it as 0 in future we will implement it
     return count;
   };
 
-  const allYears = getDistinctYears(events, poc);
+  const filteredParticipants = useMemo(
+    () =>
+      selectedYear === "all"
+        ? participants
+        : participants.filter(
+            (p) => extractYear(p.year) === Number(selectedYear)
+          ),
+    [participants, selectedYear]
+  );
 
-  const filteredParticipants =
-    selectedYear === "all"
-      ? participants
-      : participants.filter(
-        (p) => extractYear(p.year) === Number(selectedYear)
-      );
+  const filteredEvents = useMemo(
+    () =>
+      selectedYear === "all"
+        ? events
+        : events.filter(
+            (e) => extractYear(e.year || e.festName) === Number(selectedYear)
+          ),
+    [events, selectedYear]
+  );
 
-  const filteredEvents =
-    selectedYear === "all"
-      ? events
-      : events.filter(
-        (e) => extractYear(e.year || e.festName) === Number(selectedYear)
-      );
+  const filteredPoc = useMemo(
+    () =>
+      selectedYear === "all"
+        ? poc
+        : poc.filter((p) => extractYear(p.year) === Number(selectedYear)),
+    [poc, selectedYear]
+  );
 
-  const filteredPoc =
-    selectedYear === "all"
-      ? poc
-      : poc.filter((p) => extractYear(p.year) === Number(selectedYear));
-
-  const filteredWinnerEvents =
-    selectedYear === "all"
-      ? winners
-      : winners.filter(
-        (w) => extractYear(w.year || w.festName) === Number(selectedYear)
-      );
+  const filteredWinnerEvents = useMemo(
+    () =>
+      selectedYear === "all"
+        ? winners
+        : winners.filter(
+            (w) => extractYear(w.year || w.festName) === Number(selectedYear)
+          ),
+    [winners, selectedYear]
+  );
 
   const totalWinnersCount = countWinners(filteredWinnerEvents);
 
