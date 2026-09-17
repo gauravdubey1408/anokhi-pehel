@@ -117,13 +117,34 @@ const AddAntyodayaParticipant = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Check maximum 2 events
+    if (credentials.events.length > 2) {
+      setErrorMessage("You can only select up to 2 events.");
+      setShowError(true);
+      return;
+    }
+
+    // Check 1 event per group
+    const selectedGroupSet = new Set();
+    for (const eventId of credentials.events) {
+      const ev = eventList.find((e) => e._id === eventId);
+      if (ev) {
+        if (selectedGroupSet.has(ev.eventGroup)) {
+          setErrorMessage(`Only 1 event per group is allowed. Multiple events selected in Group ${ev.eventGroup}.`);
+          setShowError(true);
+          return;
+        }
+        selectedGroupSet.add(ev.eventGroup);
+      }
+    }
+
     // Validate Dance limit before submission
     for (const eventId of credentials.events) {
       const selectedEvent = eventList.find((ev) => ev._id === eventId);
       if (selectedEvent && isDanceEvent(selectedEvent)) {
         const count = getDanceParticipantsCount(selectedEvent);
         if (count >= 3) {
-          setErrorMessage(`Cannot add participant. Maximum limit (3) for "${selectedEvent.eventName}" has already been reached for this POC/school.`);
+          setErrorMessage(`Cannot add participant. Maximum limit (3) for "${selectedEvent.eventName}" has already been reached for this POC.`);
           setShowError(true);
           return;
         }
@@ -142,7 +163,7 @@ const AddAntyodayaParticipant = () => {
 
     try {
       const res = await axios.post(`${BASE_URL}/addParticipants`, formData);
-      if (res.data === "Participant Added") {
+      if (res.data === "Participant Added" || res.status === 201) {
         setShowSuccess(true);
         setCredentials({
           name: "",
@@ -161,11 +182,12 @@ const AddAntyodayaParticipant = () => {
           console.error("Error refreshing participant list:", fetchErr);
         }
       } else {
-        setErrorMessage(res.data);
+        setErrorMessage(res.data?.message || res.data || "Failed to add participant");
         setShowError(true);
       }
     } catch (err) {
-      setErrorMessage("ALL INPUT IS NOT FILLED");
+      const serverMsg = err.response?.data?.message || err.response?.data;
+      setErrorMessage(typeof serverMsg === "string" ? serverMsg : "Error adding participant. Please check all fields.");
       setShowError(true);
       console.error("error", err);
     } finally {
@@ -219,28 +241,28 @@ const AddAntyodayaParticipant = () => {
         return prevCredentials;
       }
 
-      // Check if Dance quota (max 3 per school/POC) is already reached
+      // Check if Dance quota (max 3 per POC) is already reached
       if (isDanceEvent(selectedEvent)) {
         const danceCount = getDanceParticipantsCount(selectedEvent);
         if (danceCount >= 3) {
-          setErrorMessage(`Maximum 3 participants from this School / POC are allowed for "${selectedEvent.eventName}". Limit reached (${danceCount}/3).`);
+          setErrorMessage(`Maximum 3 participants from this POC are allowed for "${selectedEvent.eventName}". Limit reached (${danceCount}/3).`);
           setShowError(true);
           return prevCredentials;
         }
       }
 
-      // Check if the max number of events (3) is reached
-      if (prevCredentials.events.length >= 3) {
-        setErrorMessage("You can only select up to 3 events.");
+      // Ensure only one event per group is selected by filtering out previous selection in the same group
+      const filteredEvents = prevCredentials.events.filter((eventId) => {
+        const event = eventList.find((e) => e._id === eventId);
+        return event && event.eventGroup !== group;
+      });
+
+      // Check if the max number of events (2) is reached
+      if (filteredEvents.length >= 2) {
+        setErrorMessage("You can only select up to 2 events (one per group).");
         setShowError(true);
         return prevCredentials;
       }
-
-      // Ensure only one event per group is selected
-      const filteredEvents = prevCredentials.events.filter((eventId) => {
-        const event = eventList.find((e) => e._id === eventId);
-        return event.eventGroup !== group;
-      });
 
       // Add the newly selected event
       return {
@@ -437,7 +459,7 @@ const AddAntyodayaParticipant = () => {
                     htmlFor="events"
                     className="block text-sm font-medium leading-6 text-gray-900"
                   >
-                    Select up to 3 events, but only one event per group.
+                    Select up to 2 events, but only one event per group.
                   </label>
 
                   <div className="mt-2 flex flex-col gap-2">
@@ -487,8 +509,8 @@ const AddAntyodayaParticipant = () => {
                                         }`}
                                     >
                                       {isQuotaFull
-                                        ? "School quota full (3/3)"
-                                        : `School quota: ${danceCount}/3`}
+                                        ? "POC quota full (3/3)"
+                                        : `POC quota: ${danceCount}/3`}
                                     </span>
                                   )}
                                 </div>
