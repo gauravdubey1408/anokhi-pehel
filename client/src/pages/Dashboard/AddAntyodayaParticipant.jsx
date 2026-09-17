@@ -165,8 +165,7 @@ const AddAntyodayaParticipant = () => {
         setShowError(true);
       }
     } catch (err) {
-      const serverMsg = err.response?.data?.message || (typeof err.response?.data === "string" ? err.response?.data : null);
-      setErrorMessage(serverMsg || "ALL INPUT IS NOT FILLED");
+      setErrorMessage("ALL INPUT IS NOT FILLED");
       setShowError(true);
       console.error("error", err);
     } finally {
@@ -230,9 +229,9 @@ const AddAntyodayaParticipant = () => {
         }
       }
 
-      // Check if the max number of events (2) is reached
-      if (prevCredentials.events.length >= 2) {
-        setErrorMessage("You can only select up to 2 events.");
+      // Check if the max number of events (3) is reached
+      if (prevCredentials.events.length >= 3) {
+        setErrorMessage("You can only select up to 3 events.");
         setShowError(true);
         return prevCredentials;
       }
@@ -438,7 +437,7 @@ const AddAntyodayaParticipant = () => {
                     htmlFor="events"
                     className="block text-sm font-medium leading-6 text-gray-900"
                   >
-                    Select up to 2 events, but only one event per group.
+                    Select up to 3 events, but only one event per group.
                   </label>
 
                   <div className="mt-2 flex flex-col gap-2">
