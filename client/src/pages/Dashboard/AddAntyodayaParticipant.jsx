@@ -96,6 +96,9 @@ const AddAntyodayaParticipant = () => {
   };
 
   const isDanceEvent = (event) => {
+    if(credentials.school == "Anokhi Pehel"){ //to treat dance events as normal events for Anokhi Pehel,and allow more than 3 participants for dance events
+      return false;
+    }
     return Boolean(event?.eventName && /dance/i.test(event.eventName));
   };
 

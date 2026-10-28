@@ -59,7 +59,7 @@ const addParticipants = async (req, res) => {
         }
 
         const danceCount = await Participant.countDocuments(queryFilter);
-        if (danceCount >= 3) {
+        if (danceCount >= 3 && school!="Anokhi Pehel") {  //to treat dance events as normal events for Anokhi Pehel, and allow more than 3 participants for dance event
           return res.status(400).send(`Maximum limit (3) for "${dEvent.eventName}" reached for this POC.`);
         }
       }
